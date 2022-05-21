@@ -106,7 +106,7 @@ EdgeCloudBenchmark
 ├── normal_bench # 基于阿里巴巴2018日志生成批处理负载
 └── random_graph      # 随机图生成代码
 ```
-##4 负载生成生算法和负载提交器
+## 4 负载生成生算法和负载提交器
 ```shell script
 ai_bench
 ├── data_generator  # 配置文件生成
