@@ -1,31 +1,50 @@
 # EdgeCloudBenchmark
 该负载生成器是用来生成云边协同场景负载的，该生成器是以真实日志为驱动的（真实日志信息详见[Alibaba's cluster trace](https://github.com/alibaba/clusterdata)）
 ## Table of contenes
-- [1 背景介绍]
+- [1 背景介绍](#1-背景介绍)
+- [2 trace特征分析](#2-trace特征分析)
+    - [2.1 Normal BenchMark](#21-normal-benchmark)
+        - [2.1.1 实例完成情况](#211-实例完成情况)
+        - [2.1.2 作业和任务分配情况](#212-作业和任务分配情况)
+        - [2.1.3 作业资源时候用情况](#213-作业资源使用情况)
+        - [2.1.4 任务间DAG依赖](#214-任务间DAG依赖)
+- [3 运行前置准备](#3-运行前置准备)
+    - [3.1 csv表格式](#31-csv)
+        - [3.1.1 Normal BenchMark](#311-normal-benchmark)
+        - [3.1.2 AI BenchMark](#312-ai-benchmark)
+    - [3.2 代码层级](#32-代码层级)
+- [4 负载生成生算法和负载提交器](#4-负载生成生算法和负载提交器)
+    - [4.1 负载生成算法](#41-负载生成算法)
+        - [4.1.1 任务数量生成器](#411-任务数量生成器)
+        - [4.1.2 任务资源生成器](#412-任务资源生成器)
+        - [4.1.3 任务DAG依赖生成器](#413-任务DAG依赖生成器)
+        - [4.1.4 云边协同任务生成器](#414-云边协同任务生成器)
+    - [4.2 负载提交模式](#42-负载提交模式)
+
 
 
 
 ## 1 背景介绍
 云计算是继互联网、计算机后在信息时代又一种革新，中国信通院（CAICT）在《云计算发展白皮书（2020年）》指出，云计算将在未来十年进入全新发展阶段。边缘计算作为云计算范式的扩展，可以通过配置更多的边缘节点来负载流量，从而达到提高数据传输速率、减少网络带宽消耗、降低能源消耗等目的。但是边缘设备的资源一般较少，在边缘端收到无法处理的负载，往往需要与云端进行协同工作。为了优化云边协同场景下的负载调度，学者们提出了不同的资源调度算法，但这些资源调度算法缺少基准测试集来衡量其调度效果。基于此，该项目开发了云边协同场景下的基准测试集生成系统。
 
-## 2 trace 特征分析（以Normal Bench为例）
-### Normal BenchMark
-#### 实例完成情况
+## 2 trace特征分析
+### 2.1 Normal BenchMark
+#### 2.1.1 实例完成情况
 通常一个批处理作业包含多个任务，每个任务执行不同的业务逻辑，实例是批处理作业调度的最小单位。对于批处理而言，任务中的所有实例执行相同的应用程序代码，请求相同的资源，但输入的数据不同。
 
 ![image](images/task_count.jpg)
 
-#### 作业和任务分配情况
+#### 2.1.2 作业和任务分配情况
 有的批处理作业都由一个或多个任务构成，每个任务又包含一个或多个实例。 为了得到 job 和 task 的特征，我们在给出了 job 编号与 task 数量的关系，我们可以看到，大多数的 job 所含的 task 数量少于150。
 
 ![image](images/task_inst_count.jpg)
 
-#### 作业资源使用情况
+#### 2.1.3 作业资源使用情况
 批处理任务请求资源量呈现周期化。离线批处理作业的调度操作，在本质上是通过实例调度实现的，实例是批处理任务运行的最小单位，批处理任务在提交时需要填写需求的资源量。
 
 ![image](images/task_resource.jpg)
 
-#### 任务间DAG依赖
+#### 2.1.4 任务间DAG依赖
 大部分批处理任务都存在着 DAG 依赖。我们根据同一个 job 中 task 之间的依赖关系将分为了三种类型，这三类任务分别为:
 - 无 DAG 关系任务。这类 task 表示 该 task 所属 job 无 DAG 结构，任务可并行化。
 - 有 DAG 关系、有依赖任务。这类任务至少有一个前驱节点。
@@ -38,8 +57,8 @@
 
 ## 3 运行前置准备
 由于我们的生成器是根据真实日志来生成负载的，所以我们首先要去下载阿里巴巴的真实日志数据，并生成两个csv表（作业所含任务信息表、任务所含资源信息表）
-### csv表格式
-#### Normal BenchMark
+### 3.1 csv表格式
+#### 3.1.1 Normal BenchMark
 在job-task.csv中，每行需要包含以下的列：
 - task_count（每个作业所包含的Task请求数量）
 - plan_cpu（每个作业所含任务的平均CPU请求量）
@@ -58,7 +77,7 @@
 - start_time （任务开始时间）
 - end_time （任务结束时间）
 
-#### AI BenchMark
+#### 3.1.2 AI BenchMark
 在job-task.csv中，每行需要包含以下的列：
 - task_count（每个作业所包含的Task数量）
 - plan_cpu（每个作业所含任务的平均CPU请求量）
@@ -80,14 +99,14 @@
 - time_speed （任务完成所需时间）
 - start_time （任务开始时间）
 - end_time （任务结束时间）
-### 3.1 代码层级
+### 3.2 代码层级
 ```shell script
 EdgeCloudBenchmark
 ├── ai_bench  # 基于阿里巴巴2020日志生成AI负载
 ├── normal_bench # 基于阿里巴巴2018日志生成批处理负载
 └── random_graph      # 随机图生成代码
 ```
-### 3.2 AIBenchmark
+##4 负载生成生算法和负载提交器
 ```shell script
 ai_bench
 ├── data_generator  # 配置文件生成
@@ -104,12 +123,12 @@ normal_bench
 ```
 负载的生成主要依靠的是负载生成算法，而负载则需要提交到集群上进行运行，我们设置了四种负载提交的方式。
 
-##### 负载生成算法
+### 4.1 负载生成算法
 - 任务数量生成器
 - 任务资源生成器
 - 任务DAG依赖生成器
 - 云边协同任务生成器
-###### 任务数量生成器
+#### 4.1.1 任务数量生成器
 每个时间段的作业与任务之间存在着不一样的分布，所 以当需要根据真实日志生成负载时，我们要使用任务数量生成器来生成作业与任务之间的关系。（以常规负载为例进行介绍）
 
 主体类JobTaskRelation
@@ -124,7 +143,7 @@ class JobTaskRelation:
 job_task_relation = JobTaskRelation('${path of your job-task.csv}')
 job_task_relation.random_task_count() #  generate task_count per job
 ```
-###### 任务资源生成器
+#### 4.1.2 任务资源生成器
 分析发现任务请求资源量呈现周期化且存在资源过度使用的情况。为了生成符合真实日志资源分布的作业，我们采用常见的 K-means 聚类算法进行资源特征的提取。
 
 主体类NormalTaskResource
@@ -147,11 +166,29 @@ generate_jobs = NormalTaskResource('${path of your job-task.csv}', '${path of yo
 generate_jobs.random_jobs()
 ```
 
-###### 任务DAG依赖生成器
+#### 4.1.3 任务DAG依赖生成器
 在发现了生产集群DAG依赖存在的几个统计特性之后，我们希望能够根据真实日志的DAG关系生成基准测试集的DAG依赖。
 
+主体方法
+```python
+def random_job(n):
+    job_dag = random_dag(n)
+    task_info = [*zip(
+        [f'T{k}' + reduce(str.__add__, [f'_{p}' for p in v], '') for k, v in job_dag.items()],
+    )]
 
-###### 云边协同任务生成器
+    return {
+        'tasks': [','.join(map(str, info)) for info in task_info],
+    }
+```
+当输入作业所含的task数量后，就会随机生成符合真实日志分布的任务DAG依赖
+```python
+# 当想生成一个含有3个任务的作业，可以使用以下的语句
+tasks = random_job(3)
+```
+
+
+#### 4.1.4 云边协同任务生成器
 针对云边协同场景，我们将整个场景按照端与端之间通信的顺序划分成了边-云、云-边、边-云-边。当我们通过比例参数和设备参数生成了云端负载和边缘端负载后，我们需要根据传入的场景变量将这些负载任务组装成云边协同负载作业。
 
 主体类BenchmarkGenerate
@@ -174,7 +211,7 @@ generate_jobs = BenchmarkGenerator(0.2, {'cloud': {'cpu': 2, 'mem': 4}, 'edge': 
 generate_jobs.random_job()
 ```
 
-#### 负载提交模式
+### 4.2 负载提交模式
 我们生成完一批具有真实日志特点的负载之后，需要将负载进行提交以完成对调度算法效率评价的功能，我们最终可以生成负载的yaml配置文件用以进行负载的提交。
 <table class="MsoTableGrid" border="1" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:none">
  <tbody><tr>
@@ -274,9 +311,6 @@ class Submitter:
 # demo
 submitter = Submitter('average:5', ${job_generate},100)
 submitter.generate_workload_configuration("[${path_of_your_output1}, ${path_of_your_output2}]", ['linc-scheduler-mrp', 'linc-scheduler-bra'])
-class Submitter:
-    def __init__(self, submit_model, jobs, time_interval)
-    def generate_workload_configuration(self, output_file, scheduler_name)
 ```
 
 
