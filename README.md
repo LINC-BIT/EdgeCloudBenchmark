@@ -20,6 +20,8 @@
         - [4.1.3 任务DAG依赖生成器](#413-任务DAG依赖生成器)
         - [4.1.4 云边协同任务生成器](#414-云边协同任务生成器)
     - [4.2 负载提交模式](#42-负载提交模式)
+- [5 项目成员](#5-项目成员)
+    - [5.1 北京理工大学](#51-北京理工大学
 
 
 
@@ -331,6 +333,13 @@ class Submitter:
 submitter = Submitter('average:5', ${job_generate},100)
 submitter.generate_workload_configuration("[${path_of_your_output1}, ${path_of_your_output2}]", ['linc-scheduler-mrp', 'linc-scheduler-bra'])
 ```
+
+## 5 项目成员
+#### 5.1 北京理工大学
+文士林，邓鸿捷。邱可
+
+
+
 
 
 
